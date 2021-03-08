@@ -4,8 +4,9 @@
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get};
+use frame_support::{decl_module, decl_storage, decl_event, decl_error, ensure,dispatch, traits::Get};
 use frame_system::ensure_signed;
+use sp_std::vec::Vec;
 
 #[cfg(test)]
 mod mock;
@@ -29,6 +30,10 @@ decl_storage! {
 		// Learn more about declaring storage items:
 		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
 		Something get(fn something): Option<u32>;
+		
+		/// 证明的存储项目
+        	/// 它将证明映射到提出声明的用户以及声明的时间。
+        	Proofs: map hasher(blake2_128_concat) Vec<u8> => (T::AccountId, T::BlockNumber);
 	}
 }
 
@@ -39,6 +44,11 @@ decl_event!(
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, AccountId),
+		
+		/// Event emitted when a proof has been claimed. [who, claim]
+        ClaimCreated(AccountId, Vec<u8>),
+        /// Event emitted when a claim is revoked by the owner. [who, claim]
+        ClaimRevoked(AccountId, Vec<u8>),
 	}
 );
 
@@ -49,6 +59,12 @@ decl_error! {
 		NoneValue,
 		/// Errors should have helpful documentation associated with them.
 		StorageOverflow,
+		/// 该证明已经被声明
+		ProofAlreadyClaimed,
+		/// 该证明不存在，因此它不能被撤销
+		NoSuchProof,
+		/// 该证明已经被另一个账号声明，因此它不能被撤销
+		NotProofOwner,
 	}
 }
 
@@ -98,6 +114,51 @@ decl_module! {
 					Ok(())
 				},
 			}
+		}
+		
+		/// 允许用户队未声明的证明拥有所有权
+		#[weight = 10_000]
+		fn create_claim(origin, proof: Vec<u8>) {
+		    // 检查 extrinsic 是否签名并获得签名者
+		    // 如果 extrinsic 未签名，此函数将返回一个错误。
+		    // https://substrate.dev/docs/en/knowledgebase/runtime/origin
+		    let sender = ensure_signed(origin)?;
+
+		    // 校验指定的证明是否被声明
+		    ensure!(!Proofs::<T>::contains_key(&proof), Error::<T>::ProofAlreadyClaimed);
+
+		    // 从 FRAME 系统模块中获取区块号.
+		    let current_block = <frame_system::Module<T>>::block_number();
+
+		    // 存储证明：发送人与区块号
+		    Proofs::<T>::insert(&proof, (&sender, current_block));
+
+		    // 声明创建后，发送事件
+		    Self::deposit_event(RawEvent::ClaimCreated(sender, proof));
+		}
+
+		/// 允许证明所有者撤回声明
+		#[weight = 10_000]
+		fn revoke_claim(origin, proof: Vec<u8>) {
+		    //  检查 extrinsic 是否签名并获得签名者
+		    // 如果 extrinsic 未签名，此函数将返回一个错误。
+		    // https://substrate.dev/docs/en/knowledgebase/runtime/origin
+		    let sender = ensure_signed(origin)?;
+
+		    // 校验指定的证明是否被声明
+		    ensure!(Proofs::<T>::contains_key(&proof), Error::<T>::NoSuchProof);
+
+		    // 获取声明的所有者
+		    let (owner, _) = Proofs::<T>::get(&proof);
+
+		    // 验证当前的调用者是证声明的所有者
+		    ensure!(sender == owner, Error::<T>::NotProofOwner);
+
+		    // 从存储中移除声明
+		    Proofs::<T>::remove(&proof);
+
+		    // 声明抹掉后，发送事件
+		    Self::deposit_event(RawEvent::ClaimRevoked(sender, proof));
 		}
 	}
 }
