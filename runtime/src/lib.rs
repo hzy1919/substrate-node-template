@@ -96,7 +96,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("node-template"),
 	impl_name: create_runtime_str!("node-template"),
 	authoring_version: 1,
-	spec_version: 100,
+	spec_version: 500,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -227,7 +227,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 500;
+	pub const ExistentialDeposit: u128 = 1000;
 	pub const MaxLocks: u32 = 50;
 }
 
@@ -283,6 +283,8 @@ construct_runtime!(
 		TemplateModule: pallet_template::{Module, Call, Storage, Event<T>},
 
 		Nicks: pallet_nicks::{Module, Call, Storage, Event<T>},
+
+		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
 	}
 );
 
@@ -523,4 +525,22 @@ impl pallet_nicks::Config for Runtime {
 
     // The ubiquitous event type.
     type Event = Event;
+}
+
+// 定义 Scheduler 模块所需要的类型。
+parameter_types! {
+    pub MaximumSchedulerWeight: Weight = 10;
+    pub const MaxScheduledPerBlock: u32 = 50;
+}
+
+// 配置 runtime 中 Scheduler 模块的实现。
+impl pallet_scheduler::Config for Runtime {
+    type Event = Event;
+    type Origin = Origin;
+    type PalletsOrigin = OriginCaller;
+    type Call = Call;
+    type MaximumWeight = MaximumSchedulerWeight;
+    type ScheduleOrigin = frame_system::EnsureRoot<AccountId>;
+    type MaxScheduledPerBlock = MaxScheduledPerBlock;
+    type WeightInfo = ();
 }
