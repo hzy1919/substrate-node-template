@@ -1,0 +1,11 @@
+{
+  "jsonrpc":"2.0",
+  "id":1,
+  "method":"author_insertKey",
+  "params":  [
+	    "aura",
+	    "answer that soft spread peace bacon evoke huge gospel phrase blind scene",
+	    "0x5a06159312a3417fc24ab143c241c9b900787e228758f0d20ffc5887453e9200"
+	  ]
+}
+
