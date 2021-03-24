@@ -43,6 +43,7 @@ pallet-timestamp = { default-features = false, version = '3.0.0' }
 pallet-transaction-payment = { default-features = false, version = '3.0.0' }
 pallet-transaction-payment-rpc-runtime-api = { default-features = false, version = '3.0.0' }
 pallet-nicks = { default-features = false, version = '3.0.0' }
+pallet-node-authorization={default-features=false, version='3.0.0'}
 # 
 pallet-scheduler = { default-features = false, version = '3.0.0' }
 
@@ -90,6 +91,7 @@ std = [
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-nicks/std',
     'pallet-scheduler/std',
+    'pallet-node-authorization/std',
     'test_pallet/std',
     'sp-api/std',
     'sp-block-builder/std',
